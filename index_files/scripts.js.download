@@ -1,0 +1,231 @@
+document.addEventListener("DOMContentLoaded", function () {
+    const menuToggle = document.getElementById("menu-toggle");
+    const navLinks = document.getElementById("nav-links");
+
+    menuToggle.addEventListener("click", function () {
+        navLinks.style.display = navLinks.style.display === "flex" ? "none" : "flex";
+        menuToggle.classList.toggle("active");
+    });
+
+    navLinks.addEventListener("click", function () {
+        navLinks.style.display = "none";
+        menuToggle.classList.remove("active");
+    });
+});
+
+const modules = ['module1', 'module2', 'module3', 'module4'];
+let currentModuleIndex = 0;
+
+function showModule(index) {
+    modules.forEach((moduleId, idx) => {
+        document.getElementById(moduleId).style.display = (idx === index) ? 'block' : 'none';
+    });
+
+    const progressPercentage = ((index + 1) / modules.length) * 100;
+    document.querySelector('.progress-bar').style.width = progressPercentage + '%';
+    document.querySelector('.progress-bar').textContent = Math.round(progressPercentage) + '%';
+}
+
+function goToPreviousModule() {
+    if (currentModuleIndex > 0) {
+        currentModuleIndex--;
+        showModule(currentModuleIndex);
+    }
+}
+
+function goToNextModule() {
+    if (currentModuleIndex < modules.length - 1) {
+        currentModuleIndex++;
+        showModule(currentModuleIndex);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('module-content').style.display = 'block';
+    showModule(currentModuleIndex);
+});
+
+const answers = {
+    'taekwondo-question1': 1,
+    'taekwondo-question2': 1,
+    'taekwondo-question3': 1,
+    'taekwondo-question4': 1,
+    'taekwondo-question5': 1,
+    'taekwondo-question6': 1,
+    'taekwondo-question7': 1,
+    'taekwondo-question8': 1,
+    'taekwondo-question9': 1,
+    'taekwondo-question10': 1
+};
+
+let currentQuestionIndex = 0;
+const totalQuestions = Object.keys(answers).length;
+
+// Timer variables
+let timer;
+let timeLeft = 600; // 10 minutes in seconds
+
+function startTimer() {
+    timer = setInterval(() => {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        document.getElementById('timer-display').textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            submitQuiz(); 
+        } else {
+            timeLeft--;
+        }
+    }, 1000);
+}
+
+function updateProgressBar() {
+    const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
+    document.getElementById('progress-bar').style.width = `${progress}%`;
+    document.getElementById('progress-bar').setAttribute('aria-valuenow', progress);
+}
+
+function showQuestion(index) {
+    const questions = document.querySelectorAll('.question');
+    questions.forEach((question, i) => {
+        question.style.display = i === index ? 'block' : 'none';
+    });
+
+    document.getElementById('prev-button').style.display = index === 0 ? 'none' : 'inline-block';
+    document.getElementById('next-button').style.display = index === totalQuestions - 1 ? 'none' : 'inline-block';
+    
+    updateProgressBar();
+}
+
+function navigateQuiz(step) {
+    const newIndex = currentQuestionIndex + step;
+    if (newIndex >= 0 && newIndex < totalQuestions) {
+        currentQuestionIndex = newIndex;
+        showQuestion(currentQuestionIndex);
+    }
+}
+
+// Sanitize user inputs to prevent XSS
+function sanitizeInput(value) {
+    const element = document.createElement('div');
+    element.textContent = value;
+    return element.innerHTML;
+}
+
+// Validate input values
+function validateInput(value) {
+    return !isNaN(value) && value >= 0 && value <= 1; // Adjust as per your specific needs
+}
+
+function submitQuiz() {
+    clearInterval(timer); // Stop the timer when quiz is submitted
+    const resultDiv = document.getElementById('quiz-result');
+    let score = 0;
+
+    for (const [key, correctValue] of Object.entries(answers)) {
+        const selectedValue = parseInt(document.getElementById(key).value, 10);
+        if (validateInput(selectedValue) && selectedValue === correctValue) {
+            score++;
+        }
+    }
+
+    const percentage = (score / totalQuestions) * 100;
+    let feedback = '';
+    if (percentage === 100) {
+        feedback = 'Perfect!';
+    } else if (percentage >= 80) {
+        feedback = 'Great!';
+    } else if (percentage >= 60) {
+        feedback = 'Good!';
+    } else if (percentage >= 40) {
+        feedback = 'Fair attempt!';
+    } else {
+        feedback = 'Keep reviewing!';
+    }
+
+    // Sanitize score display
+    resultDiv.innerHTML = `
+        <h3>Your Score: ${sanitizeInput(score.toString())} / ${sanitizeInput(totalQuestions.toString())}</h3>
+        <p>Percentage: ${sanitizeInput(percentage.toFixed(2))}%</p>
+        <p>${sanitizeInput(feedback)}</p>
+    `;
+
+    // Show review button
+    document.getElementById('review-button').style.display = 'inline-block';
+}
+
+function showReviewSection() {
+    const reviewContent = document.getElementById('review-content');
+    reviewContent.innerHTML = '';
+
+    for (const [key, correctValue] of Object.entries(answers)) {
+        const selectedValue = parseInt(document.getElementById(key).value, 10);
+        const question = document.querySelector(`label[for="${key}"]`).textContent;
+
+        // Sanitize user answer and correct answer
+        reviewContent.innerHTML += `
+            <div class="review-item">
+                <p><strong>${sanitizeInput(question)}</strong></p>
+                <p>Your Answer: ${sanitizeInput(document.querySelector(`#${key} option[value="${selectedValue}"]`).textContent)}</p>
+                <p>Correct Answer: ${sanitizeInput(document.querySelector(`#${key} option[value="${correctValue}"]`).textContent)}</p>
+            </div>
+        `;
+    }
+    
+    document.getElementById('review-section').style.display = 'block';
+    document.getElementById('quiz-result').style.display = 'none';
+}
+
+function resetQuiz() {
+    document.getElementById('quizForm').reset();
+    currentQuestionIndex = 0;
+    timeLeft = 600; // Reset timer to 10 minutes
+    clearInterval(timer);
+    document.getElementById('timer-display').textContent = '10:00';
+    showQuestion(currentQuestionIndex);
+    
+    // Reset progress bar
+    document.getElementById('progress-bar').style.width = '0%';
+    document.getElementById('progress-bar').setAttribute('aria-valuenow', 0);
+
+    // Show start button and hide quiz content
+    document.getElementById('start-section').style.display = 'block';
+    document.getElementById('quiz-content').style.display = 'none';
+
+    // Hide review section
+    document.getElementById('review-section').style.display = 'none';
+    document.getElementById('quiz-result').style.display = 'none';
+
+    // Hide review button
+    document.getElementById('review-button').style.display = 'none';
+}
+
+function startQuiz() {
+    // Hide start button section
+    document.getElementById('start-section').style.display = 'none';
+    
+    // Show quiz content
+    document.getElementById('quiz-content').style.display = 'block';
+    
+    // Initialize quiz settings
+    initializeQuiz();
+    startTimer();
+}
+
+function initializeQuiz() {
+    showQuestion(currentQuestionIndex);
+    updateProgressBar();
+
+    // Enable navigation buttons
+    document.getElementById('prev-button').disabled = false;
+    document.getElementById('next-button').disabled = false;
+    document.getElementById('submit-button').disabled = false;
+}
+
+// Event listener for the start button
+document.getElementById('start-button').addEventListener('click', startQuiz);
+
+// Initial setup
+document.addEventListener('DOMContentLoaded', () => {
+    showQuestion(currentQuestionIndex);
+});
